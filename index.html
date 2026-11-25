@@ -61,6 +61,12 @@ input[type=range]::-moz-range-thumb{width:12px;height:20px;border-radius:3px;bac
 .sw{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--key);display:flex;align-items:center;gap:8px;padding:0 8px;font-size:12px;position:relative;overflow:hidden}
 .sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .chip{width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.2);flex:none}
+.backs{display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px;align-items:center;font-size:13px;font-weight:500}
+.chips{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.chips>*{aspect-ratio:1;border-radius:8px;border:1px solid var(--line);padding:0;position:relative;overflow:hidden;display:block}
+.chips>[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:2px}
+.chips .any{background:conic-gradient(from 90deg,#fff,#ff4f00,#ffd400,#2fb36b,#2f6bff,#fff)}.chips .any input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.chips .rnd{background:var(--key)}.chips .rnd::after{content:"?";font:700 15px "Inter Tight",sans-serif;position:absolute;inset:0;display:grid;place-items:center}
 .letters{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
 .letters input{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--key);padding:0 10px;font:500 15px "JetBrains Mono",monospace;letter-spacing:.04em;width:100%}
 .letters button{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--key);font-weight:500}
@@ -126,10 +132,20 @@ hr{border:0;border-top:1px solid var(--line);margin:2px 0}
   <hr>
   <div class="sec"><span class="mono">colour</span>
     <div class="seg" data-for="colorMode">Mode <button data-v="off">One</button><button data-v="line">Line</button><button data-v="pair">Each 10</button></div>
-    <div class="swatches">Pick
-      <label class="sw"><span class="chip" id="chipText"></span>Text<input type="color" id="color" value="#000000"></label>
-      <label class="sw"><span class="chip" id="chipBg"></span>Back<input type="color" id="bg" value="#ffffff"></label>
-      <button class="sw" id="kRandBg" aria-pressed="false"><span class="chip" id="chipRand" style="background:conic-gradient(#ff4f00,#ffd400,#2fb36b,#2f6bff,#ff4f00)"></span>Random</button>
+    <div class="swatches">Text
+      <label class="sw"><span class="chip" id="chipText"></span>Pick<input type="color" id="color" value="#000000"></label>
+    </div>
+    <div class="backs">Back
+      <div class="chips" id="backChips">
+        <button data-c="#ffffff" style="background:#ffffff" aria-label="White"></button>
+        <button data-c="#141413" style="background:#141413" aria-label="Black"></button>
+        <button data-c="#ff4f00" style="background:#ff4f00" aria-label="Orange"></button>
+        <button data-c="#ffd400" style="background:#ffd400" aria-label="Yellow"></button>
+        <button data-c="#2f6bff" style="background:#2f6bff" aria-label="Blue"></button>
+        <button data-c="#efeee9" style="background:#efeee9" aria-label="Paper"></button>
+        <label class="any" aria-label="Any colour"><input type="color" id="bg" value="#ffffff"></label>
+        <button id="kRandBg" class="rnd" aria-pressed="false" aria-label="Random background"></button>
+      </div>
     </div>
     <label class="fader">Colours <input type="range" id="ncol" min="1" max="12" value="4"><output class="mono"></output></label>
   </div>
@@ -169,7 +185,8 @@ const val = id => {const e=$(id);return e.type==="checkbox"?e.checked:e.type==="
 function showOut(){
   for(const e of document.querySelectorAll("input[type=range]"))e.nextElementSibling.textContent=e.value;
   for(const g of document.querySelectorAll(".seg"))for(const b of g.querySelectorAll("button"))b.setAttribute("aria-pressed",b.dataset.v===val(g.dataset.for));
-  $("chipText").style.background=val("color"); $("chipBg").style.background=val("bg"); $("kRandBg").setAttribute("aria-pressed",val("randBg"));
+  $("chipText").style.background=val("color"); $("kRandBg").setAttribute("aria-pressed",val("randBg"));
+  for(const b of $("backChips").querySelectorAll("button[data-c]"))b.setAttribute("aria-pressed",!val("randBg")&&b.dataset.c===val("bg"));
   for(const k of ["tilt","shake","tap","sound"])$("k"+k[0].toUpperCase()+k.slice(1)).setAttribute("aria-pressed",play[k]);
 }
 try{const s=JSON.parse(store.get("ten-tilt-settings-2")||"{}");for(const id of ids)if(id in s){$(id).type==="checkbox"?$(id).checked=s[id]:$(id).value=s[id]}
@@ -462,12 +479,13 @@ if(stored)useFont(bytes(stored.data),stored.name); else useFont(bytes(BUILTIN),"
 
 // ---------- controls
 for(const id of ids){const e=$(id);if(e.type==="hidden")continue;
-  const on=()=>{showOut();if(!["heavy","sens"].includes(id))rebuild();else save()};
+  const on=()=>{if(id==="bg")$("randBg").checked=false;showOut();if(!["heavy","sens"].includes(id))rebuild();else save()};   // picking a background switches Random off
   e.addEventListener("input",on); if(e.type==="color")e.addEventListener("change",on);   // some iPhones only report a colour when the picker closes
 }
 $("heavy").addEventListener("change",rebuild);
 for(const g of document.querySelectorAll(".seg"))g.addEventListener("click",e=>{const b=e.target.closest("button");if(b){$(g.dataset.for).value=b.dataset.v;rebuild()}});
 $("kRandBg").addEventListener("click",()=>{$("randBg").checked=!$("randBg").checked;rebuild()});
+$("backChips").addEventListener("click",e=>{const b=e.target.closest("button[data-c]");if(b){$("bg").value=b.dataset.c;$("randBg").checked=false;rebuild()}});   // one tap: that background
 for(const k of ["tilt","shake","tap"])$("k"+k[0].toUpperCase()+k.slice(1)).addEventListener("click",()=>{play[k]=!play[k];if(k==="tilt"&&!play.tilt)setGravity(0,1);showOut();save()});
 $("kSound").addEventListener("click",async()=>{
   if(play.sound){play.sound=false;soundOff()}else if(await soundOn()){play.sound=true;msg("")}
