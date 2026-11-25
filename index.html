@@ -9,99 +9,165 @@
 <meta name="theme-color" content="#ffffff">
 <title>Ten Tilt</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-/* VOICE: a toy, not a tool; the letters are everything
-   IDEA: a snow globe of 10s you hold in your hand
-   PICTURE: the full-screen pile of letters reacting to the phone's tilt
-   COLOUR and TYPE: the user's own colours; controls in one warm sheet, one red action; Figtree
-   LAYOUT: full-bleed canvas; a small round button opens a bottom sheet of settings */
-:root{color-scheme:light dark;--sheet:light-dark(#f6f5f2,#242427);--ink:light-dark(#1d1d1f,#ecebe8);--mute:light-dark(#6c6a66,#9d9b97);--line:light-dark(#d6d3cd,#38383c);--red:#e6261f}
-:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+/* VOICE: an instrument, not an app: calm, exact, a little playful
+   IDEA: a pocket synth panel (Teenage Engineering / Dieter Rams): keys with indicator lights, thin faders
+   PICTURE: the full-screen pile of 10s; the panel slides over it only when asked for
+   COLOUR and TYPE: warm off-white panel, black ink, one orange signal colour; Inter Tight + a mono for values
+   LAYOUT: full-bleed canvas; bottom panel in a 4-column grid of square keys and fader rows */
+:root{--panel:#efeee9;--key:#fbfaf7;--ink:#141413;--mute:#8a8882;--line:#d9d7d0;--sig:#ff4f00}
 *{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
 html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
-body{background:#fff;color:var(--ink);font:16px/1.45 Figtree,system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+body{background:#fff;color:var(--ink);font:15px/1.35 "Inter Tight",system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
 canvas{position:fixed;inset:0;width:100vw;height:100dvh;display:block;touch-action:none}
-#gear{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;border:0;background:var(--ink);color:var(--sheet);font-size:22px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
-#sheet{position:fixed;left:0;right:0;bottom:0;max-height:86dvh;overflow:auto;background:var(--sheet);border-radius:20px 20px 0 0;padding:18px 18px max(18px,env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.2);display:grid;gap:14px;touch-action:pan-y;-webkit-user-select:auto;user-select:auto}
-h1{font-size:30px;line-height:1.05;margin:0;font-weight:800}
-.sub{color:var(--mute);margin:4px 0 0;font-size:14px}
-.top{display:flex;justify-content:space-between;align-items:start;gap:12px}
-.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-button{font:inherit;color:inherit;min-height:48px;border-radius:12px;border:1px solid var(--line);background:transparent;font-weight:700;cursor:pointer}
-.red{background:var(--red);border-color:var(--red);color:#fff;font-size:18px;font-weight:800}
-.file{display:block;border:1.5px dashed var(--line);border-radius:12px;padding:14px;text-align:center;font-size:14px}
-.file input{display:none}.file strong{display:block;font-size:16px}
-label{display:grid;grid-template-columns:100px minmax(0,1fr) 44px;align-items:center;gap:10px;font-size:15px}
-label.wide{grid-template-columns:100px minmax(0,1fr)}
-output{text-align:right;color:var(--mute);font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:var(--ink);height:32px}
-input[type=text],select{height:42px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;padding:0 10px;font:inherit;font-size:16px;width:100%}
-input[type=color]{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;background:none;padding:2px}
-.note{font-size:13px;color:var(--mute);margin:0}.warn{color:var(--red)}
-#tap{position:fixed;inset:0;border:0;border-radius:0;background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);display:grid;place-content:center;gap:6px;text-align:center;color:#1d1d1f;font-weight:600}
-#tap strong{font-size:34px;font-weight:800;background:#fff;padding:14px 26px 4px;border-radius:22px 22px 0 0}
-#tap span{font-size:16px;color:#55534f;background:#fff;padding:0 26px 16px;border-radius:0 0 22px 22px;margin-top:-6px;box-shadow:0 14px 30px rgba(0,0,0,.18)}
-#help{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:20px}
-#help .card{background:var(--sheet);border-radius:18px;padding:20px;max-width:420px;display:grid;gap:12px;color:var(--ink)}
-#help h2{margin:0;font-size:22px;line-height:1.2}#help ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px}
-#hint{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);background:rgba(0,0,0,.72);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;pointer-events:none;transition:opacity .6s;white-space:nowrap}
-@media(prefers-reduced-motion:reduce){#tap{position:fixed;inset:0;border:0;border-radius:0;background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);display:grid;place-content:center;gap:6px;text-align:center;color:#1d1d1f;font-weight:600}
-#tap strong{font-size:34px;font-weight:800;background:#fff;padding:14px 26px 4px;border-radius:22px 22px 0 0}
-#tap span{font-size:16px;color:#55534f;background:#fff;padding:0 26px 16px;border-radius:0 0 22px 22px;margin-top:-6px;box-shadow:0 14px 30px rgba(0,0,0,.18)}
-#help{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:20px}
-#help .card{background:var(--sheet);border-radius:18px;padding:20px;max-width:420px;display:grid;gap:12px;color:var(--ink)}
-#help h2{margin:0;font-size:22px;line-height:1.2}#help ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px}
-#hint{transition:none}}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.02em}
+
+/* menu button */
+#gear{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;border:0;background:var(--ink);display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#gear i{display:block;width:16px;height:2px;background:var(--panel);box-shadow:0 -5px 0 var(--panel),0 5px 0 var(--panel)}
+
+/* panel */
+#sheet{position:fixed;left:0;right:0;bottom:0;max-height:88dvh;overflow:auto;background:var(--panel);border-radius:18px 18px 0 0;padding:16px 16px max(18px,env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.18);display:grid;gap:14px;touch-action:pan-y;-webkit-user-select:auto;user-select:auto}
+.head{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:8px}.brand b{font-size:20px;font-weight:700;letter-spacing:-.01em}.brand span{color:var(--mute)}
+.x{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--key);font-size:18px;line-height:1}
+.sec{display:grid;gap:8px}.sec>.mono{color:var(--mute)}
+.keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.key{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:var(--key);display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:9px;font-size:13px;font-weight:500;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.key:active{transform:translateY(1px)}
+.key .led{position:absolute;top:9px;left:9px;width:7px;height:7px;border-radius:50%;background:var(--line)}
+.key[aria-pressed=true] .led{background:var(--sig);box-shadow:0 0 6px var(--sig)}
+.key.go{background:var(--sig);border-color:var(--sig);color:#fff}.key.go .led{background:#fff}
+.key.ink{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.wide2{grid-column:span 2;aspect-ratio:auto;min-height:56px}
+.fader{display:grid;grid-template-columns:64px minmax(0,1fr) 40px;align-items:center;gap:10px;font-size:13px;font-weight:500}
+.fader output{text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--ink)}
+input[type=range]::-moz-range-track{height:2px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:22px;margin-top:-10px;border-radius:3px;background:var(--key);border:1.5px solid var(--ink)}
+input[type=range]::-moz-range-thumb{width:12px;height:20px;border-radius:3px;background:var(--key);border:1.5px solid var(--ink)}
+.seg{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:6px;align-items:center;font-size:13px;font-weight:500}
+.seg button{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--key);font-size:13px}
+.seg button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.swatches{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:6px;align-items:center;font-size:13px;font-weight:500}
+.sw{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--key);display:flex;align-items:center;gap:8px;padding:0 8px;font-size:12px;position:relative;overflow:hidden}
+.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.chip{width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.2);flex:none}
+.letters{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.letters input{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--key);padding:0 10px;font:500 15px "JetBrains Mono",monospace;letter-spacing:.04em;width:100%}
+.letters button{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--key);font-weight:500}
+.file{border:1px dashed var(--mute);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+.file input{display:none}.file span{color:var(--mute)}
+.msg{margin:0;font-size:13px;color:var(--sig)}
+hr{border:0;border-top:1px solid var(--line);margin:2px 0}
+
+/* start + help + hint */
+#tap{position:fixed;inset:0;border:0;background:rgba(255,255,255,.5);display:grid;place-items:center;padding:24px}
+#tap .card{background:var(--panel);border-radius:16px;padding:22px 26px;display:grid;gap:6px;text-align:left;box-shadow:0 12px 34px rgba(0,0,0,.2);min-width:240px}
+#tap .card b{font-size:28px;font-weight:700;letter-spacing:-.01em}#tap .card .mono{color:var(--mute)}
+#tap .card .led{width:9px;height:9px;border-radius:50%;background:var(--sig);box-shadow:0 0 8px var(--sig);margin-bottom:6px}
+#help{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:20px}
+#help .card{background:var(--panel);border-radius:16px;padding:20px;max-width:420px;display:grid;gap:12px}
+#help h2{margin:0;font-size:20px;line-height:1.2}#help ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px}
+#help button{min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--key);font-weight:500}
+#help button.go{background:var(--sig);border-color:var(--sig);color:#fff}
+#hint{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:20px;pointer-events:none;transition:opacity .6s;white-space:nowrap}
+@media(prefers-reduced-motion:reduce){#hint{transition:none}}
+#desk{position:fixed;inset:0;display:grid;place-items:center;background:var(--panel);padding:24px;touch-action:auto}
+#desk .card{background:var(--key);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:380px;display:grid;gap:12px;justify-items:start}
+#desk b{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.1}#desk p{margin:0;color:var(--mute)}
+#desk .led{width:9px;height:9px;border-radius:50%;background:var(--sig);box-shadow:0 0 8px var(--sig)}
+#qr{width:200px;height:200px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:10px}#qr svg{width:100%;height:100%;display:block}
+#desk .mono{color:var(--mute);word-break:break-all}
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
-<div id="hint" hidden></div>
-<button id="gear" aria-label="Settings">☰</button>
-<button id="tap"><strong>Tap to start</strong><span>Tilt your phone · shake · tap</span></button>
-<div id="help" hidden><div class="card"><h2 id="helpTitle"></h2><ol id="helpSteps"></ol><button id="copyLink" hidden>Copy link</button><button id="helpOk" class="red">Play with my finger for now</button></div></div>
+<div id="hint" class="mono" hidden></div>
+<button id="gear" aria-label="Menu"><i></i></button>
+<button id="tap"><span class="card"><span class="led"></span><b>Tap to start</b><span class="mono">tilt · shake · tap · sound</span></span></button>
+<div id="help" hidden><div class="card"><h2 id="helpTitle"></h2><ol id="helpSteps"></ol><button id="copyLink" hidden>Copy link</button><button id="helpOk" class="go">Play with my finger for now</button></div></div>
+
 <div id="sheet" hidden>
-  <div class="top"><div><h1>Ten Tilt</h1><p class="sub">Tilt your phone and the 10s fall that way. Shake for a gust, tap to push. No motion? Drag your finger.</p></div><button id="close" aria-label="Close settings" style="min-height:40px;padding:0 14px">Close</button></div>
-  <label class="file"><input type="file" id="fontFile" accept=".otf,.ttf,.woff,font/*,application/octet-stream"><strong id="fontName">Load your font</strong><span>tenyears is built in; load a newer version here</span></label>
-  <p class="note warn" id="msg" hidden></p>
-  <div class="btns">
-    <button id="start" class="red" disabled style="grid-column:1/-1">Start tilting</button>
-    <button id="shuffle" disabled>New design</button>
-    <button id="reset" disabled>Put back</button>
+  <div class="head"><div class="brand"><b>Ten Tilt</b><span class="mono">10 · 01</span></div><button class="x" id="close" aria-label="Close">×</button></div>
+
+  <div class="sec"><span class="mono">play</span>
+    <div class="keys">
+      <button class="key" id="kTilt" aria-pressed="true"><span class="led"></span>Tilt</button>
+      <button class="key" id="kShake" aria-pressed="true"><span class="led"></span>Shake</button>
+      <button class="key" id="kTap" aria-pressed="true"><span class="led"></span>Tap</button>
+      <button class="key" id="kSound" aria-pressed="false"><span class="led"></span>Sound</button>
+    </div>
+    <label class="fader">Sense <input type="range" id="sens" min="1" max="100" value="60"><output class="mono"></output></label>
+    <label class="fader">Heavy <input type="range" id="heavy" min="1" max="100" value="40"><output class="mono"></output></label>
+    <p class="msg" id="msg" hidden></p>
   </div>
-  <label class="wide">Letters <input type="text" id="letters" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" autocapitalize="characters" spellcheck="false"></label>
-  <label>Same letter <input type="range" id="same" min="0" max="100" value="30"><output></output></label>
-  <label>Size <input type="range" id="size" min="16" max="240" value="48"><output></output></label>
-  <label>Line gap <input type="range" id="gap" min="0" max="100" value="20"><output></output></label>
-  <label class="wide">Size mode <select id="sizeMode"><option value="off">All the same</option><option value="line">Random per line</option><option value="pair">Random per 10</option></select></label>
-  <label>Random min <input type="range" id="smin" min="16" max="400" value="24"><output></output></label>
-  <label>Random max <input type="range" id="smax" min="16" max="400" value="120"><output></output></label>
-  <label class="wide">Color mode <select id="colorMode"><option value="off">One color</option><option value="line">Random per line</option><option value="pair">Random per 10</option></select></label>
-  <label class="wide">Text color <input type="color" id="color" value="#000000"></label>
-  <label>Colors <input type="range" id="ncol" min="1" max="12" value="4"><output></output></label>
-  <label class="wide">Background <input type="color" id="bg" value="#ffffff"></label>
-  <label class="wide">Random bg <input type="checkbox" id="randBg" style="justify-self:start;width:24px;height:24px"></label>
-  <label>Margin <input type="range" id="pm" min="0" max="60" value="12"><output></output></label>
-  <label>Heaviness <input type="range" id="heavy" min="1" max="100" value="40"><output></output></label>
+  <hr>
+  <div class="sec"><span class="mono">layout</span>
+    <label class="fader">Size <input type="range" id="size" min="10" max="120" value="28"><output class="mono"></output></label>
+    <label class="fader">Gap <input type="range" id="gap" min="0" max="100" value="20"><output class="mono"></output></label>
+    <label class="fader">Same <input type="range" id="same" min="0" max="100" value="30"><output class="mono"></output></label>
+    <label class="fader">Margin <input type="range" id="pm" min="0" max="60" value="12"><output class="mono"></output></label>
+    <div class="seg" data-for="pieces">Pieces <button data-v="letters">Letters</button><button data-v="pairs">Pairs</button><span class="mono" style="color:var(--mute)">pairs = faster</span></div>
+    <div class="seg" data-for="sizeMode">Sizes <button data-v="off">Fixed</button><button data-v="line">Line</button><button data-v="pair">Each 10</button></div>
+    <label class="fader">Min <input type="range" id="smin" min="10" max="200" value="14"><output class="mono"></output></label>
+    <label class="fader">Max <input type="range" id="smax" min="10" max="200" value="60"><output class="mono"></output></label>
+  </div>
+  <hr>
+  <div class="sec"><span class="mono">colour</span>
+    <div class="seg" data-for="colorMode">Mode <button data-v="off">One</button><button data-v="line">Line</button><button data-v="pair">Each 10</button></div>
+    <div class="swatches">Pick
+      <label class="sw"><span class="chip" id="chipText"></span>Text<input type="color" id="color" value="#000000"></label>
+      <label class="sw"><span class="chip" id="chipBg"></span>Back<input type="color" id="bg" value="#ffffff"></label>
+      <button class="sw" id="kRandBg" aria-pressed="false"><span class="chip" id="chipRand" style="background:conic-gradient(#ff4f00,#ffd400,#2fb36b,#2f6bff,#ff4f00)"></span>Random</button>
+    </div>
+    <label class="fader">Colours <input type="range" id="ncol" min="1" max="12" value="4"><output class="mono"></output></label>
+  </div>
+  <hr>
+  <div class="sec"><span class="mono">letters</span>
+    <div class="letters"><input type="text" id="letters" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" autocapitalize="characters" spellcheck="false" aria-label="Letters"><button id="allLetters">A–Z</button></div>
+    <label class="file"><input type="file" id="fontFile" accept=".otf,.ttf,.woff,font/*,application/octet-stream"><strong id="fontName">tenyears</strong><span>load font</span></label>
+  </div>
+  <div class="keys">
+    <button class="key wide2 ink" id="shuffle">New</button>
+    <button class="key wide2" id="reset">Put back</button>
+  </div>
 </div>
+<input type="hidden" id="pieces" value="letters"><input type="hidden" id="sizeMode" value="off"><input type="hidden" id="colorMode" value="off"><input type="checkbox" id="randBg" hidden>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/planck@1.0.6/dist/planck.min.js"></script>
 <script>
-{
+const isPhone=matchMedia("(pointer: coarse)").matches&&Math.min(screen.width,screen.height)<600;   // touch screen, phone sized
+if(!isPhone){                              // computers and tablets get a QR code to open it on a phone
+  document.body.innerHTML='<div id="desk"><div class="card"><span class="led"></span><b>Ten Tilt is made for phones</b><p>Scan with your phone camera, then open the link in Safari.</p><div id="qr"></div><span class="mono" id="url"></span></div></div>';
+  document.getElementById("url").textContent=location.href.replace(/^https?:\/\//,"");
+  try{const q=qrcode(0,"M");q.addData(location.href);q.make();document.getElementById("qr").innerHTML=q.createSvgTag({cellSize:5,margin:0,scalable:true})}catch(e){}
+}else{
 const $ = id => document.getElementById(id);
 const cv = $("cv"), ctx = cv.getContext("2d");
-const ids = ["letters","same","size","gap","sizeMode","smin","smax","colorMode","color","ncol","bg","randBg","pm","heavy"];
+const ids = ["letters","same","size","gap","pieces","sizeMode","smin","smax","colorMode","color","ncol","bg","randBg","pm","heavy","sens"];
+const play = {tilt:true, shake:true, tap:true, sound:false};   // which interactions are on
 const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let font = null, seed = 1, page = {W:390, H:844, bg:"#fff"}, letters = [], world = null, bodies = [], tilting = false, live = false;   // live: letters move
-const msg=(t,warn)=>{$("msg").hidden=!t;$("msg").classList.toggle("warn",!!warn);$("msg").textContent=t||""};
-window.addEventListener("error",e=>msg("Error: "+e.message,true));
+let font = null, seed = 1, page = {W:390, H:844, bg:"#fff"}, letters = [], world = null, bodies = [], tilting = false, live = false;
+const msg=t=>{$("msg").hidden=!t;$("msg").textContent=t||""};
+window.addEventListener("error",e=>msg("Error: "+e.message));
 
 // ---------- settings
 const val = id => {const e=$(id);return e.type==="checkbox"?e.checked:e.type==="range"?+e.value:e.value};
-const showOut=()=>{for(const e of document.querySelectorAll("input[type=range]"))e.nextElementSibling.textContent=e.value};
-try{const s=JSON.parse(store.get("ten-tilt-settings")||"{}");for(const id of ids)if(id in s){$(id).type==="checkbox"?$(id).checked=s[id]:$(id).value=s[id]}}catch(e){}
-const save=()=>{const s={};for(const id of ids)s[id]=val(id);store.set("ten-tilt-settings",JSON.stringify(s))};
+function showOut(){
+  for(const e of document.querySelectorAll("input[type=range]"))e.nextElementSibling.textContent=e.value;
+  for(const g of document.querySelectorAll(".seg"))for(const b of g.querySelectorAll("button"))b.setAttribute("aria-pressed",b.dataset.v===val(g.dataset.for));
+  $("chipText").style.background=val("color"); $("chipBg").style.background=val("bg"); $("kRandBg").setAttribute("aria-pressed",val("randBg"));
+  for(const k of ["tilt","shake","tap","sound"])$("k"+k[0].toUpperCase()+k.slice(1)).setAttribute("aria-pressed",play[k]);
+}
+try{const s=JSON.parse(store.get("ten-tilt-settings-2")||"{}");for(const id of ids)if(id in s){$(id).type==="checkbox"?$(id).checked=s[id]:$(id).value=s[id]}
+  if(s.play)Object.assign(play,s.play,{sound:false})}catch(e){}       // the microphone always starts off
+const save=()=>{const s={play};for(const id of ids)s[id]=val(id);store.set("ten-tilt-settings-2",JSON.stringify(s))};
 showOut();
 const area=()=>({W:innerWidth,H:innerHeight,M:val("pm")});   // the phone's screen
 
@@ -171,6 +237,11 @@ function buildLetters(L){                  // one shape per letter, from the rea
   const upm=font.unitsPerEm, out=[];
   for(const [q,base] of L.placed){
     const gl=font.stringToGlyphs(q.p); let gx=q.x; const by=L.H-base;
+    if(val("pieces")==="pairs"){         // the 1 and the 0 stay together as one piece: half the pieces, much faster
+      const path=font.getPath(q.p,gx,by,q.sz);
+      if(path.commands.length)out.push({path,p2d:new Path2D(path.toPathData(2)),c:q.c,body:null});
+      continue;
+    }
     gl.forEach((g,i)=>{
       const path=g.getPath(gx,by,q.sz);
       if(path.commands.length)out.push({path,p2d:new Path2D(path.toPathData(2)),c:q.c,body:null});
@@ -184,7 +255,7 @@ function buildLetters(L){                  // one shape per letter, from the rea
 let S=30;                                  // physics scale: pixels per metre (set from the screen width)
 function makeBody(l,world){                // the letter drawn on a small grid; filled squares become its shape
   const bx=l.path.getBoundingBox(); if(!isFinite(bx.x1))return null;
-  const w=bx.x2-bx.x1, h=bx.y2-bx.y1, cell=Math.max(.8,Math.max(w,h)/20);
+  const w=bx.x2-bx.x1, h=bx.y2-bx.y1, cell=Math.max(w,h)/Math.max(3,Math.min(6,Math.max(w,h)/6));   // small letters get a coarser, faster shape
   const cols=Math.ceil(w/cell)+2, rows=Math.ceil(h/cell)+2;
   const c=makeBody.c||(makeBody.c=document.createElement("canvas")); c.width=cols; c.height=rows;
   const x=c.getContext("2d",{willReadFrequently:true}); x.clearRect(0,0,cols,rows);
@@ -207,9 +278,9 @@ function makeBody(l,world){                // the letter drawn on a small grid; 
 
 
 // ---------- the world: walls on the margins; gravity follows the phone
-const G=30;                                // full gravity, metres per second squared
+const G=30;
 function makeWorld(){
-  world=planck.World({gravity:planck.Vec2(0,G)});
+  world=planck.World({gravity:planck.Vec2(gravity.x*G,gravity.y*G)});
   const {W,H}=page, M=val("pm"), ground=world.createBody();
   const box=(x0,y0,x1,y1)=>ground.createFixture(planck.Box((x1-x0)/2/S,(y1-y0)/2/S,planck.Vec2((x0+x1)/2/S,(y0+y1)/2/S)),{friction:.9});
   box(-W,H-M,2*W,H*3); box(-W,-H*3,M,H*3); box(W-M,-H*3,2*W,H*3); box(-W,-H*3,2*W,M);   // floor, walls, ceiling
@@ -217,12 +288,12 @@ function makeWorld(){
   bodies=letters.map(l=>{let b=null;try{b=makeBody(l,world)}catch(e){}
     if(b){b.setLinearDamping(.05+heavy*.6);b.setAngularDamping(.4+heavy*2)}l.body=b;return b});
 }
-let gravity={x:0,y:1};                     // direction and strength, 1 = phone held straight up
+let gravity={x:0,y:1};                     // 1 = phone held straight up
 function setGravity(x,y){
   if(!world)return;
   const moved=Math.hypot(x-gravity.x,y-gravity.y)>.02; gravity={x,y};
   world.setGravity(planck.Vec2(x*G,y*G));
-  if(moved)for(const b of bodies)b&&b.setAwake(true);   // sleeping letters wake up when you tilt
+  if(moved)for(const b of bodies)b&&b.setAwake(true);
 }
 function push(px,py,power){                // a blast from a point: tap or shake
   for(const b of bodies){
@@ -232,28 +303,35 @@ function push(px,py,power){                // a blast from a point: tap or shake
     b.applyAngularImpulse(b.getInertia()*(Math.random()-.5)*power*.1,true);
   }
 }
+function jump(strength){                   // a beat: every letter jumps against gravity, some higher than others
+  const g=Math.hypot(gravity.x,gravity.y)||1, ux=-gravity.x/g, uy=-(gravity.y||1)/g;
+  for(const b of bodies){
+    if(!b)continue; const f=b.getMass()*strength*(.35+Math.random()*.9);
+    b.applyLinearImpulse(planck.Vec2(ux*f+(Math.random()-.5)*f*.4,uy*f),b.getWorldCenter(),true);
+    b.applyAngularImpulse(b.getInertia()*(Math.random()-.5)*strength*.15,true);
+  }
+}
 
 // ---------- phone motion
 const iOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 let lastShake=0;
 function onMotion(e){
   const a=e.accelerationIncludingGravity; if(!a||a.x===null)return;
-  let x=a.x/9.81, y=-a.y/9.81;             // gravity in screen directions (iPhone sign; others flipped below)
-  if(!iOS){x=-x;y=-y}
-  const ang=((screen.orientation&&screen.orientation.angle)??window.orientation??0)*Math.PI/180;   // follow a rotated screen
+  let x=a.x/9.81, y=-a.y/9.81; if(!iOS){x=-x;y=-y}
+  const ang=((screen.orientation&&screen.orientation.angle)??window.orientation??0)*Math.PI/180;
   const rx=x*Math.cos(ang)+y*Math.sin(ang), ry=-x*Math.sin(ang)+y*Math.cos(ang);
-  setGravity(Math.max(-1.5,Math.min(1.5,rx)),Math.max(-1.5,Math.min(1.5,ry)));
-  const j=e.acceleration;                  // shake: a hard jolt without gravity
-  if(j&&j.x!==null&&Math.hypot(j.x,j.y,j.z)>14&&performance.now()-lastShake>500){lastShake=performance.now();push(page.W/2,page.H*1.1,9)}
+  if(play.tilt)setGravity(Math.max(-1.5,Math.min(1.5,rx)),Math.max(-1.5,Math.min(1.5,ry)));
+  const j=e.acceleration;
+  if(play.shake&&j&&j.x!==null&&Math.hypot(j.x,j.y,j.z)>14&&performance.now()-lastShake>500){lastShake=performance.now();push(page.W/2,page.H*1.1,9)}
 }
 const ua=navigator.userAgent;
-const homeScreen=navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;   // opened from a Home Screen icon
-const inApp=!homeScreen&&(/FBAN|FBAV|Instagram|Line\/|GSA\/|WhatsApp|Snapchat|MicroMessenger|Claude/i.test(ua)||(iOS&&!/Safari\//.test(ua)));   // a browser inside another app
+const homeScreen=navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;
+const inApp=!homeScreen&&(/FBAN|FBAV|Instagram|Line\/|GSA\/|WhatsApp|Snapchat|MicroMessenger|Claude/i.test(ua)||(iOS&&!/Safari\//.test(ua)));
 const PROBLEMS={
   inApp:["Open this page in Safari",["Tap <b>Copy link</b> below.","Open the <b>Safari</b> app, tap the address bar, paste and go.","Tap <b>Tap to start</b> and then <b>Allow</b>."]],
-  https:["The page needs an https:// address",["The iPhone only shares motion with pages online, not with a file opened from Files.","Put the page online (Netlify Drop) and open its <b>https://</b> link in Safari."]],
-  denied:["Motion access was turned down",["Open iPhone <b>Settings → Apps → Safari → Advanced → Website Data</b>.","Search for this site (e.g. <b>netlify</b>), swipe left and delete it.","Come back, reload the page, tap <b>Tap to start</b> and choose <b>Allow</b>."]],
-  none:["This device has no motion sensors here",["Drag your finger across the screen: gravity follows your finger."]]};
+  https:["The page needs an https:// address",["The iPhone only shares motion with pages online, not with a file opened from Files.","Open the page's <b>https://</b> link in Safari."]],
+  denied:["Motion access was turned down",["Open iPhone <b>Settings → Apps → Safari → Advanced → Website Data</b>.","Search for this site (e.g. <b>github.io</b>), swipe left and delete it.","Come back, reload, tap <b>Tap to start</b> and choose <b>Allow</b>."]],
+  none:["No motion sensors here",["Drag your finger across the screen: gravity follows your finger."]]};
 function problem(kind){
   const [t,steps]=PROBLEMS[kind]; $("helpTitle").textContent=t;
   $("helpSteps").innerHTML=steps.map(x=>"<li>"+x+"</li>").join(""); $("help").hidden=false;
@@ -261,51 +339,74 @@ function problem(kind){
 }
 async function startTilt(){
   $("tap").hidden=true; live=true;
-  try{
-    if(typeof DeviceMotionEvent==="undefined")return problem("none");
-    if(!window.isSecureContext)return problem(inApp?"inApp":"https");
-    if(typeof DeviceMotionEvent.requestPermission==="function"){
-      let r="denied"; try{r=await DeviceMotionEvent.requestPermission()}catch(e){}   // iPhone asks once
-      if(r!=="granted")return problem(inApp?"inApp":"denied");
-    }
-    window.addEventListener("devicemotion",onMotion);
-    tilting=true; $("start").textContent="Tilting ✓"; closeSheet();
-    hint("Tilt the phone · shake · tap");
-  }catch(e){msg("Couldn't start motion: "+e.message,true)}
+  if(typeof DeviceMotionEvent==="undefined")return problem("none");
+  if(!window.isSecureContext)return problem(inApp?"inApp":"https");
+  if(typeof DeviceMotionEvent.requestPermission==="function"){
+    let r="denied"; try{r=await DeviceMotionEvent.requestPermission()}catch(e){}
+    if(r!=="granted")return problem(inApp?"inApp":"denied");
+  }
+  window.addEventListener("devicemotion",onMotion);
+  tilting=true; $("gear").hidden=true;   // clean full screen
+  hint("tilt · shake · tap · double-tap for menu");
 }
 $("tap").addEventListener("click",startTilt);
-$("copyLink").addEventListener("click",async()=>{
-  try{await navigator.clipboard.writeText(location.href);$("copyLink").textContent="Copied ✓ Now paste it in Safari"}
-  catch(e){$("copyLink").textContent=location.href}   // can't copy: show the address to type instead
-});
-$("helpOk").addEventListener("click",()=>{$("help").hidden=true;hint("Drag your finger to tilt")});
+$("copyLink").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(location.href);$("copyLink").textContent="Copied ✓ Now paste it in Safari"}catch(e){$("copyLink").textContent=location.href}});
+$("helpOk").addEventListener("click",()=>{$("help").hidden=true;$("gear").hidden=true;hint("drag to tilt · double-tap for menu")});
 
-// ---------- no phone? arrow keys or drag with the mouse to tilt (for testing on a computer)
+// ---------- sound: letters jump on the beat (mostly the bass). Listened to on the phone only, never recorded.
+let audio=null;
+async function soundOn(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
+    const an=ac.createAnalyser(); an.fftSize=1024; an.smoothingTimeConstant=.15;
+    ac.createMediaStreamSource(stream).connect(an);
+    audio={ac,an,stream,data:new Uint8Array(an.frequencyBinCount),avg:0,last:0}; return true;
+  }catch(e){msg("Microphone not available: "+(e.name==="NotAllowedError"?"access was turned down in Safari settings.":e.message));return false}
+}
+function soundOff(){if(audio){audio.stream.getTracks().forEach(t=>t.stop());audio.ac.close();audio=null}}
+function listen(now){
+  if(!audio)return;
+  const {an,data}=audio; an.getByteFrequencyData(data);
+  const hz=audio.ac.sampleRate/an.fftSize, top=Math.max(2,Math.round(180/hz));
+  let bass=0; for(let i=1;i<=top;i++)bass+=data[i]; bass/=top;
+  let all=0; for(let i=1;i<data.length/4;i++)all+=data[i]; all/=data.length/4;
+  const e=bass*.75+all*.25, sense=val("sens")/100;
+  audio.avg=audio.avg*.94+e*.06;
+  if(e>audio.avg*(1.15+(1-sense)*.9)&&e>40+(1-sense)*80&&now-audio.last>140){   // a jump above the recent level = a beat
+    audio.last=now; live=true; jump(Math.min(2.2,(e-audio.avg)/Math.max(10,audio.avg)*4)*7);
+  }
+}
+
+// ---------- no phone? arrow keys or drag to tilt
 const keys={};
 addEventListener("keydown",e=>{keys[e.key]=true;keyTilt()}); addEventListener("keyup",e=>{keys[e.key]=false;keyTilt()});
-function keyTilt(){if(tilting)return;live=true;const x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0),y=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0);if(x||y)setGravity(x/Math.hypot(x,y),y/Math.hypot(x,y))}
+function keyTilt(){if(tilting&&play.tilt)return;const x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0),y=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0);if(x||y){live=true;setGravity(x/Math.hypot(x,y),y/Math.hypot(x,y))}}
 
-// ---------- tap to push
-let down=null;
-cv.addEventListener("pointerdown",e=>{down={x:e.clientX,y:e.clientY,t:performance.now()}});
-cv.addEventListener("pointermove",e=>{   // without motion: gravity follows your finger while you drag
-  if(!down||tilting)return; const dx=e.clientX-down.x,dy=e.clientY-down.y,d=Math.hypot(dx,dy);
+// ---------- taps: one pushes, two bring back the menu
+let down=null, lastTap=0;
+cv.addEventListener("pointerdown",e=>{down={x:e.clientX,y:e.clientY}});
+cv.addEventListener("pointermove",e=>{
+  if(!down||(tilting&&play.tilt))return; const dx=e.clientX-down.x,dy=e.clientY-down.y,d=Math.hypot(dx,dy);
   if(d>12){live=true;setGravity(dx/d,dy/d)}
 });
 cv.addEventListener("pointerup",e=>{
-  if(!down)return;
-  const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);
-  live=true;
-  if(moved<12)push(e.clientX,e.clientY,5);                      // a tap pushes letters away from your finger
-  else if(!tilting){const dx=e.clientX-down.x,dy=e.clientY-down.y,d=Math.hypot(dx,dy);setGravity(dx/d,dy/d)}   // a drag sets the tilt on a computer
-  down=null;
+  if(!down)return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; live=true;
+  if(moved>=12)return;
+  const now=performance.now();
+  if(now-lastTap<320){showGear();lastTap=0}
+  else{lastTap=now;if(play.tap)push(e.clientX,e.clientY,5)}
 });
 
 // ---------- run + draw
-let last=0, acc=0;
+let last=0, acc=0, slow={t:0,n:0,told:false};
 function frame(now){
   const dt=Math.min(.05,(now-(last||now))/1000); last=now; acc+=dt;
-  while(acc>=1/60){if(world&&live)world.step(1/60,8,4);acc-=1/60}   // the design holds still until you start
+  if(live&&!slow.told&&val("pieces")==="letters"){   // a phone that can't keep up gets a tip, once
+    slow.n++; slow.t+=dt; if(slow.t>3){if(slow.n/slow.t<24){slow.told=true;hint("slow? menu → pieces → pairs")}slow.t=slow.n=0}
+  }
+  listen(now);
+  while(acc>=1/60){if(world&&live)world.step(1/60,3,1);acc-=1/60}
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
   ctx.fillStyle=page.bg; ctx.fillRect(0,0,page.W,page.H);
   for(const l of letters){
@@ -316,41 +417,50 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 function rebuild(){
-  if(!font)return; save();
-  const {W,H}=area(); S=W/14;            // physics scale from the screen width
+  if(!font)return; save(); showOut();
+  const {W,H}=area(); S=W/14;
   cv.width=Math.round(W*devicePixelRatio); cv.height=Math.round(H*devicePixelRatio);
   const L=layout(); page={W:L.W,H:L.H,bg:L.bg}; letters=buildLetters(L);
   document.body.style.background=page.bg; document.querySelector('meta[name=theme-color]').content=page.bg;
-  makeWorld(); setGravity(gravity.x,gravity.y); live=tilting;   // a new design holds still until you tilt (or start)
+  makeWorld(); live=tilting;
 }
 
-// ---------- sheet + hint
-function closeSheet(){$("sheet").hidden=true;$("gear").hidden=false}
-$("gear").addEventListener("click",()=>{$("sheet").hidden=false;$("gear").hidden=true});
-$("close").addEventListener("click",closeSheet);
-let hintT=0; function hint(t){const h=$("hint");h.textContent=t;h.hidden=false;h.style.opacity=1;clearTimeout(hintT);hintT=setTimeout(()=>h.style.opacity=0,2500)}
+// ---------- menu + hint
+let gearT=0;
+function showGear(){$("gear").hidden=false;clearTimeout(gearT);if(live)gearT=setTimeout(()=>{if($("sheet").hidden)$("gear").hidden=true},4000)}
+$("gear").addEventListener("click",()=>{clearTimeout(gearT);$("sheet").hidden=false;$("gear").hidden=true});
+$("close").addEventListener("click",()=>{$("sheet").hidden=true;showGear()});
+let hintT=0; function hint(t){const h=$("hint");h.textContent=t;h.hidden=false;h.style.opacity=1;clearTimeout(hintT);hintT=setTimeout(()=>h.style.opacity=0,2600)}
 
-// ---------- font: tenyears is built in; a newer one loaded from ☰ is remembered and used instead
+// ---------- font: tenyears is built in; a newer one loaded from the menu is remembered
 const BUILTIN="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";
 function useFont(buf,name){
-  try{font=opentype.parse(buf)}catch(e){$("fontName").textContent="Could not read that font";return}
-  $("fontName").textContent=name; for(const b of ["start","shuffle","reset"])$(b).disabled=false;
+  try{font=opentype.parse(buf)}catch(e){msg("Could not read that font");return}
+  $("fontName").textContent=name;
   const miss=[...new Set(val("letters"))].flatMap(c=>[c.toUpperCase(),c.toLowerCase()]).filter(c=>/\p{L}/u.test(c)&&!font.charToGlyph(c).index);
-  msg(miss.length?"Not in the font yet, skipped: "+[...new Set(miss)].join(" "):"",true);
+  msg(miss.length?"Not in the font yet, skipped: "+[...new Set(miss)].join(" "):"");
   rebuild();
 }
 $("fontFile").addEventListener("change",async e=>{
   const f=e.target.files[0]; if(!f)return; const buf=await f.arrayBuffer();
-  try{let s="";const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode(...u.subarray(i,i+8192));store.set("ten-tilt-font",JSON.stringify({name:f.name,data:btoa(s)}))}catch(e){}
-  useFont(buf,f.name);
+  try{let s="";const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode(...u.subarray(i,i+8192));store.set("ten-tilt-font",JSON.stringify({name:f.name.replace(/\.[^.]+$/,""),data:btoa(s)}))}catch(e){}
+  useFont(buf,f.name.replace(/\.[^.]+$/,""));
 });
 const bytes=b64=>{const b=atob(b64),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer};
 let stored=null; try{stored=JSON.parse(store.get("ten-tilt-font")||"null")}catch(e){}
-if(stored)useFont(bytes(stored.data),stored.name); else useFont(bytes(BUILTIN),"tenyears-Regular.otf (built in)");
+if(stored)useFont(bytes(stored.data),stored.name); else useFont(bytes(BUILTIN),"tenyears");
 
 // ---------- controls
-for(const id of ids)$(id).addEventListener("input",()=>{showOut();rebuild()});
-$("start").addEventListener("click",startTilt);
+for(const id of ids){const e=$(id);if(e.type!=="hidden")e.addEventListener("input",()=>{showOut();if(!["heavy","sens"].includes(id))rebuild();else save()})}
+$("heavy").addEventListener("change",rebuild);
+for(const g of document.querySelectorAll(".seg"))g.addEventListener("click",e=>{const b=e.target.closest("button");if(b){$(g.dataset.for).value=b.dataset.v;rebuild()}});
+$("kRandBg").addEventListener("click",()=>{$("randBg").checked=!$("randBg").checked;rebuild()});
+for(const k of ["tilt","shake","tap"])$("k"+k[0].toUpperCase()+k.slice(1)).addEventListener("click",()=>{play[k]=!play[k];if(k==="tilt"&&!play.tilt)setGravity(0,1);showOut();save()});
+$("kSound").addEventListener("click",async()=>{
+  if(play.sound){play.sound=false;soundOff()}else if(await soundOn()){play.sound=true;msg("")}
+  showOut();
+});
+$("allLetters").addEventListener("click",()=>{$("letters").value="ABCDEFGHIJKLMNOPQRSTUVWXYZ";rebuild()});
 $("shuffle").addEventListener("click",()=>{seed++;rebuild()});
 $("reset").addEventListener("click",rebuild);
 let rt=0; addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(rebuild,250)});
