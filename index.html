@@ -49,6 +49,11 @@ input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--ink
 input[type=range]::-moz-range-track{height:2px;background:var(--ink)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:22px;margin-top:-10px;border-radius:3px;background:var(--key);border:1.5px solid var(--ink)}
 input[type=range]::-moz-range-thumb{width:12px;height:20px;border-radius:3px;background:var(--key);border:1.5px solid var(--ink)}
+.meter{display:grid;grid-template-columns:64px minmax(0,1fr) 40px;align-items:center;gap:10px}.meter .mono{color:var(--mute)}
+.bar{position:relative;height:8px;border-radius:4px;background:var(--key);border:1px solid var(--line);overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ink);transition:width .05s}
+.bar b{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--sig);left:50%}
+.key.flash .led{background:#fff;box-shadow:0 0 10px var(--sig),0 0 2px #fff}
 .seg{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:6px;align-items:center;font-size:13px;font-weight:500}
 .seg button{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--key);font-size:13px}
 .seg button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
@@ -101,12 +106,14 @@ hr{border:0;border-top:1px solid var(--line);margin:2px 0}
       <button class="key" id="kTap" aria-pressed="true"><span class="led"></span>Tap</button>
       <button class="key" id="kSound" aria-pressed="false"><span class="led"></span>Sound</button>
     </div>
-    <label class="fader">Sense <input type="range" id="sens" min="1" max="100" value="60"><output class="mono"></output></label>
+    <label class="fader">Sense <input type="range" id="sens" min="1" max="100" value="75"><output class="mono"></output></label>
+    <div class="meter" aria-hidden="true"><span class="mono">level</span><div class="bar"><i id="lvl"></i><b id="thr"></b></div></div>
     <label class="fader">Heavy <input type="range" id="heavy" min="1" max="100" value="40"><output class="mono"></output></label>
     <p class="msg" id="msg" hidden></p>
   </div>
   <hr>
   <div class="sec"><span class="mono">layout</span>
+    <label class="fader">Lines <input type="range" id="lines" min="1" max="40" value="12"><output class="mono"></output></label>
     <label class="fader">Size <input type="range" id="size" min="10" max="120" value="28"><output class="mono"></output></label>
     <label class="fader">Gap <input type="range" id="gap" min="0" max="100" value="20"><output class="mono"></output></label>
     <label class="fader">Same <input type="range" id="same" min="0" max="100" value="30"><output class="mono"></output></label>
@@ -150,7 +157,7 @@ if(!isPhone){                              // computers and tablets get a QR cod
 }else{
 const $ = id => document.getElementById(id);
 const cv = $("cv"), ctx = cv.getContext("2d");
-const ids = ["letters","same","size","gap","pieces","sizeMode","smin","smax","colorMode","color","ncol","bg","randBg","pm","heavy","sens"];
+const ids = ["letters","same","lines","size","gap","pieces","sizeMode","smin","smax","colorMode","color","ncol","bg","randBg","pm","heavy","sens"];
 const play = {tilt:true, shake:true, tap:true, sound:false};   // which interactions are on
 const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 let font = null, seed = 1, page = {W:390, H:844, bg:"#fff"}, letters = [], world = null, bodies = [], tilting = false, live = false;
@@ -228,7 +235,7 @@ function layout(){
     return [out,seam];
   }
   const gap=S*val("gap")/100; let n=1;
-  while(n<300&&pack(n+1,gap)[1]>=gap)n++;
+  while(n<Math.min(300,val("lines"))&&pack(n+1,gap)[1]>=gap)n++;   // as many lines as fit, up to the Lines setting
   let lo=gap, hi=gap+Math.max(0,pack(n,gap)[1]-gap);
   for(let i=0;i<25;i++){const mid=(lo+hi)/2;if(pack(n,mid)[1]>=mid)lo=mid;else hi=mid}
   return {W,H,bg,placed:pack(n,lo)[0]};
@@ -359,7 +366,7 @@ async function soundOn(){
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     const ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
-    const an=ac.createAnalyser(); an.fftSize=1024; an.smoothingTimeConstant=.15;
+    const an=ac.createAnalyser(); an.fftSize=1024; an.smoothingTimeConstant=.15; an.minDecibels=-95; an.maxDecibels=-25;   // hears quieter sounds
     ac.createMediaStreamSource(stream).connect(an);
     audio={ac,an,stream,data:new Uint8Array(an.frequencyBinCount),avg:0,last:0}; return true;
   }catch(e){msg("Microphone not available: "+(e.name==="NotAllowedError"?"access was turned down in Safari settings.":e.message));return false}
@@ -373,8 +380,11 @@ function listen(now){
   let all=0; for(let i=1;i<data.length/4;i++)all+=data[i]; all/=data.length/4;
   const e=bass*.75+all*.25, sense=val("sens")/100;
   audio.avg=audio.avg*.94+e*.06;
-  if(e>audio.avg*(1.15+(1-sense)*.9)&&e>40+(1-sense)*80&&now-audio.last>140){   // a jump above the recent level = a beat
-    audio.last=now; live=true; jump(Math.min(2.2,(e-audio.avg)/Math.max(10,audio.avg)*4)*7);
+  const need=Math.max(audio.avg*(1.04+(1-sense)*.5),8+(1-sense)*55);   // how loud a beat must be: lower with more Sense
+  if(!$("sheet").hidden){$("lvl").style.width=Math.min(100,e/2.55)+"%";$("thr").style.left=Math.min(99,need/2.55)+"%"}
+  if(e>need&&now-audio.last>130){         // louder than the recent level = a beat
+    audio.last=now; live=true; jump(3+Math.min(2,(e-audio.avg)/Math.max(8,audio.avg)*3)*5);
+    const k=$("kSound"); k.classList.add("flash"); setTimeout(()=>k.classList.remove("flash"),90);
   }
 }
 
@@ -451,7 +461,10 @@ let stored=null; try{stored=JSON.parse(store.get("ten-tilt-font")||"null")}catch
 if(stored)useFont(bytes(stored.data),stored.name); else useFont(bytes(BUILTIN),"tenyears");
 
 // ---------- controls
-for(const id of ids){const e=$(id);if(e.type!=="hidden")e.addEventListener("input",()=>{showOut();if(!["heavy","sens"].includes(id))rebuild();else save()})}
+for(const id of ids){const e=$(id);if(e.type==="hidden")continue;
+  const on=()=>{showOut();if(!["heavy","sens"].includes(id))rebuild();else save()};
+  e.addEventListener("input",on); if(e.type==="color")e.addEventListener("change",on);   // some iPhones only report a colour when the picker closes
+}
 $("heavy").addEventListener("change",rebuild);
 for(const g of document.querySelectorAll(".seg"))g.addEventListener("click",e=>{const b=e.target.closest("button");if(b){$(g.dataset.for).value=b.dataset.v;rebuild()}});
 $("kRandBg").addEventListener("click",()=>{$("randBg").checked=!$("randBg").checked;rebuild()});
